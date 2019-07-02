@@ -5,6 +5,7 @@ import android.app.Activity;
 import androidx.lifecycle.Observer;
 import androidx.lifecycle.ViewModelProviders;
 
+import android.content.Intent;
 import android.os.Bundle;
 
 import androidx.annotation.Nullable;
@@ -22,6 +23,7 @@ import android.widget.ProgressBar;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import com.example.masterbbq.MapsActivity;
 import com.example.masterbbq.R;
 import com.example.masterbbq.ui.login.LoginViewModel;
 import com.example.masterbbq.ui.login.LoginViewModelFactory;
@@ -74,7 +76,9 @@ public class LoginActivity extends AppCompatActivity {
                 setResult(Activity.RESULT_OK);
 
                 //Complete and destroy login activity once successful
+                Intent intent = new Intent(getApplicationContext(), MapsActivity.class);
                 finish();
+                startActivity(intent);
             }
         });
 

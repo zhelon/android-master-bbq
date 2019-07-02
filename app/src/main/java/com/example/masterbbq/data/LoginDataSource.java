@@ -20,19 +20,31 @@ import java.io.IOException;
 public class LoginDataSource {
 
 
-    Result.Success success;
-    Result.Error error;
 
     public Result<LoggedInUser> login(String username, String password) {
 
         try {
 
-            new LoginTask(username, password).execute();
-            if(success != null){
-                return success;
-            }else {
-                return error;
+            ResponseEntity<JsonNode> responseEntity =  new LoginTask(username, password).execute().get();
+
+            if(responseEntity.getStatusCode() == HttpStatus.OK){
+                //Settings.PREFERENCES_EDITOR.putString(Settings.LOGIN,  null);
+                //Settings.PREFERENCES_EDITOR.commit();
+
+                JsonNode data = responseEntity.getBody().get("data");
+
+                LoggedInUser loggedInUser =  new LoggedInUser(data.get("id").toString(),
+                        data.get("name").toString(),
+                        data.get("auth_token").toString(),
+                        data.get("email").toString(),
+                        data.get("active").asBoolean(),
+                        data.get("verify").asBoolean());
+                return new Result.Success(loggedInUser);
+            }else{
+                return new Result.Error(new IOException("Error logging in"+ responseEntity.getBody()));
             }
+
+
             // TODO: handle loggedInUser authentication
             /*LoggedInUser fakeUser =
                     new LoggedInUser(
@@ -50,7 +62,7 @@ public class LoginDataSource {
         ObjectMapper mapper = new ObjectMapper();
         ResponseEntity<JsonNode> responseEntity;
         String url = Settings.BASE_URL+Settings.BASE_PORT+Settings.API+Settings.SERVICE_LOGIN;
-        String response = "{\"id\":2,\"role_id\":\"1\",\"name\":\"test\",\"email\":\"test@test.com\",\"auth_token\":\"e91a0b4211c05ae1ec8937845a203d1591691d22a02b628e20665a097bb09029\",\"email_verified_at\":null,\"active\":\"1\",\"verify\":\"0\",\"created_at\":\"2019-05-07 04:23:50\",\"updated_at\":\"2019-05-10 15:43:11\",\"role\":{\"id\":2,\"role_name\":\"ADMIN\",\"created_at\":\"2019-05-07 04:23:37\",\"updated_at\":\"2019-05-07 04:23:37\"}}";
+        String response = "{\"data\":{\"id\":3,\"role_id\":\"1\",\"name\":\"test\",\"type_user_id\":\"2\",\"email\":\"test@test.com\",\"auth_token\":\"4baf773a40eeea34743b21ebf0a0a173260e781322b851f1446cf8c0ab30f00f\",\"email_verified_at\":null,\"active\":\"1\",\"verify\":\"0\",\"created_at\":\"2019-06-25 02:52:27\",\"updated_at\":\"2019-07-02 02:31:17\",\"role\":null}}";
 
         public LoginTask(String email, String password){
             this.email = email;
@@ -61,34 +73,16 @@ public class LoginDataSource {
         protected ResponseEntity<JsonNode> doInBackground(Void... voids) {
             String credentials = email+"/"+ password;
             restTemplate.getMessageConverters().add(new MappingJackson2HttpMessageConverter());
-            ResponseEntity<JsonNode> responseEntity = restTemplate.getForEntity(url+credentials, JsonNode.class);
+            //ResponseEntity<JsonNode> responseEntity = restTemplate.getForEntity(url+credentials, JsonNode.class);
+            ResponseEntity<JsonNode> responseEntity = null;
+            try {
+                responseEntity = new ResponseEntity<JsonNode>(new ObjectMapper().readTree(response), HttpStatus.OK);
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
             return responseEntity;
         }
 
-        @Override
-        protected void onPostExecute(ResponseEntity<JsonNode> result) {
-
-            if(result.getStatusCode() == HttpStatus.CREATED){
-                Settings.PREFERENCES_EDITOR.putString(Settings.LOGIN, "true");
-                Settings.PREFERENCES_EDITOR.commit();
-
-                JsonNode data = result.getBody().get("data");
-
-                LoggedInUser loggedInUser =  new LoggedInUser(data.get("id").toString(),
-                        data.get("name").toString(),
-                        data.get("auth_token").toString(),
-                        data.get("email").toString(),
-                        data.get("active").asBoolean(),
-                        data.get("verify").asBoolean());
-                success =  new Result.Success(loggedInUser);
-            }else{
-                error = new Result.Error(new IOException("Error logging in"+ result.getBody()));
-            }
-
-
-
-
-        }
     }
 
 
